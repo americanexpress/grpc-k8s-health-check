@@ -1,0 +1,51 @@
+# Copyright 2019 American Express Travel Related Services Company, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied. See the License for the specific language governing permissions and limitations under
+# the License.
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  # The name of the deployment.
+  name: grpc-deploy
+  labels:
+    app: grpcapp1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpcapp1
+  template:
+    metadata:
+      labels:
+        app: grpcapp1
+    spec:
+      containers:
+      - name: server
+        image: serverimg
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 3000
+        livenessProbe:
+          exec:
+            command: ["ls","/app"]
+            # If you need to check the liveness and create a fake not alive then you can use exit 1.
+            #command: ["exit","1"]
+          initialDelaySeconds: 5
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe","-addr=:3000"]
+          initialDelaySeconds: 10
+          # The periodSeconds field specifies that the kubelet should perform a readiness probe every X seconds. 
+          periodSeconds: 1
+      - name: client
+        image: clientimg
+        # Since we push image to `minikube docker-env` we want it to pull locally and not from dokcer hub. 
+        imagePullPolicy: Never
